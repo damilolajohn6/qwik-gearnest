@@ -15,7 +15,7 @@ export interface IProduct extends Document {
     quantity: number;
     continueSellingWhenOutOfStock: boolean;
     images: string[];
-    category: Types.ObjectId; // Use Types.ObjectId instead of string
+    category: Types.ObjectId;
     tags: string[];
     variants?: {
         name: string;

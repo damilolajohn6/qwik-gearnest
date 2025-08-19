@@ -1,10 +1,10 @@
-import  HeroSection  from "@/components/shop/HeroSection";
-import  FeaturedCategories  from "@/components/shop/FeaturedCategories";
-import  BestSellers  from "@/components/shop/BestSellers";
-import  PromoBanner  from "@/components/shop/PromoBanner";
+import { HeroSection } from "@/components/shop/HeroSection";
+import { FeaturedCategories } from "@/components/shop/FeaturedCategories";
+import { BestSellers } from "@/components/shop/BestSellers";
 import connectDB from "@/lib/db";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
+import PromoBanner from "@/components/shop/PromoBanner";
 
 async function getFeaturedProducts() {
   try {

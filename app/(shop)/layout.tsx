@@ -1,6 +1,6 @@
-import  Header  from "@/components/shop/Header";
-import  Footer  from "@/components/shop/Footer";
-import  CartProvider  from "@/components/providers/CartProvider";
+import { Header } from "@/components/shop/Header";
+import { Footer } from "@/components/shop/Footer";
+import { CartProvider } from "@/components/providers/CartProvider";
 
 export default function ShopLayout({
   children,
