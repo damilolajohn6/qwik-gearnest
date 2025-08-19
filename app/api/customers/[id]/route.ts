@@ -8,17 +8,19 @@ import { verifyAuth } from "@/lib/auth";
 // GET single customer
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await connectDB();
 
-        const user = await User.findById(params.id).select("-password");
+        const { id } = await params;
+
+        const user = await User.findById(id).select("-password");
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        const orders = await Order.find({ user: params.id }).sort({ createdAt: -1 });
+        const orders = await Order.find({ user: id }).sort({ createdAt: -1 });
 
         return NextResponse.json({ user, orders });
     } catch (error) {
@@ -32,7 +34,7 @@ export async function GET(
 // UPDATE customer
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await verifyAuth(request);
@@ -42,9 +44,10 @@ export async function PUT(
 
         await connectDB();
         const body = await request.json();
+        const { id } = await params;
 
         const updatedUser = await User.findByIdAndUpdate(
-            params.id,
+            id,
             { $set: body },
             { new: true }
         ).select("-password");
@@ -65,7 +68,7 @@ export async function PUT(
 // DELETE customer
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await verifyAuth(request);
@@ -74,7 +77,9 @@ export async function DELETE(
         }
 
         await connectDB();
-        const deletedUser = await User.findByIdAndDelete(params.id);
+        const { id } = await params;
+
+        const deletedUser = await User.findByIdAndDelete(id);
 
         if (!deletedUser) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -88,3 +93,4 @@ export async function DELETE(
         );
     }
 }
+
