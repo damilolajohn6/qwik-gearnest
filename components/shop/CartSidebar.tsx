@@ -1,12 +1,17 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { useState } from "react";
+import { X, Plus, Minus, ShoppingBag, Tag, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/useCart";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { toast } from "react-hot-toast";
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -14,8 +19,40 @@ interface CartSidebarProps {
 }
 
 export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
-  const { items, totalAmount, totalItems, updateQuantity, removeItem } =
-    useCart();
+  const { 
+    items, 
+    totalAmount, 
+    totalItems, 
+    subtotal,
+    tax,
+    shipping,
+    discount,
+    updateQuantity, 
+    removeItem,
+    applyDiscount,
+    removeDiscount,
+    getCartSummary
+  } = useCart();
+
+  const [discountCode, setDiscountCode] = useState("");
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
+
+  const cartSummary = getCartSummary();
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return;
+    
+    setIsApplyingDiscount(true);
+    const success = applyDiscount(discountCode);
+    if (success) {
+      setDiscountCode("");
+    }
+    setIsApplyingDiscount(false);
+  };
+
+  const handleRemoveDiscount = () => {
+    removeDiscount();
+  };
 
   return (
     <>
@@ -91,10 +128,13 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                               updateQuantity(item.id, item.quantity - 1)
                             }
                             className="h-8 w-8 p-0"
+                            disabled={item.quantity <= 1}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="font-medium">{item.quantity}</span>
+                          <span className="font-medium min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
                           <Button
                             variant="outline"
                             size="sm"
@@ -102,6 +142,7 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                               updateQuantity(item.id, item.quantity + 1)
                             }
                             className="h-8 w-8 p-0"
+                            disabled={item.maxQuantity ? item.quantity >= item.maxQuantity : false}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -126,10 +167,87 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           {/* Footer */}
           {items.length > 0 && (
             <div className="border-t p-6 space-y-4">
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total:</span>
-                <span>{formatCurrency(totalAmount)}</span>
+              {/* Discount Code */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Discount code"
+                    value={discountCode}
+                    onChange={(e) => setDiscountCode(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleApplyDiscount}
+                    disabled={isApplyingDiscount || !discountCode.trim()}
+                    size="sm"
+                  >
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </div>
+                {discount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-600">Discount applied</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600">-{formatCurrency(discount)}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveDiscount}
+                        className="h-6 px-2 text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* Order Summary */}
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tax</span>
+                  <span>{formatCurrency(tax)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span className={shipping === 0 ? "text-green-600" : ""}>
+                    {shipping === 0 ? "Free" : formatCurrency(shipping)}
+                  </span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>-{formatCurrency(discount)}</span>
+                  </div>
+                )}
+                <div className="border-t pt-2 flex justify-between text-lg font-semibold">
+                  <span>Total</span>
+                  <span>{formatCurrency(totalAmount)}</span>
+                </div>
+              </div>
+
+              {/* Free Shipping Progress */}
+              {subtotal < 75 && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-blue-700 mb-2">
+                    <Truck className="h-4 w-4" />
+                    <span>Free shipping on orders over $75</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((subtotal / 75) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Add {formatCurrency(75 - subtotal)} more for free shipping
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <Button className="w-full" asChild onClick={onClose}>
@@ -146,7 +264,7 @@ export function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               </div>
 
               <p className="text-xs text-gray-500 text-center">
-                Shipping calculated at checkout
+                Secure checkout with SSL encryption
               </p>
             </div>
           )}

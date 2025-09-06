@@ -1,126 +1,162 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Order } from '@/models/Order';
+import Order from '@/models/Order';
 import { verifyAuth } from '@/lib/auth';
 
-interface RouteParams {
-    params: Promise<{ id: string }>;
-}
-
+// GET /api/orders/[id] - Get specific order
 export async function GET(
     request: NextRequest,
-    { params }: RouteParams
+    { params }: { params: { id: string } }
 ) {
     try {
         const authResult = await verifyAuth(request);
+        
         if (!authResult.success) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
         }
 
         await connectDB();
-        const { id } = await params;
 
-        const query: any = { _id: id };
-
-        // If customer, only allow access to their own orders
-        if (authResult.user?.role === 'customer') {
-            query.customer = authResult.user.userId;
-        }
-
-        const order = await Order.findOne(query)
-            .populate('customer', 'name email phone')
-            .populate('items.product', 'name images price');
+        const order = await Order.findOne({
+            _id: params.id,
+            user: authResult.user.userId
+        })
+            .populate('items.product', 'name image slug')
+            .lean();
 
         if (!order) {
-            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+            return NextResponse.json(
+                { error: 'Order not found' },
+                { status: 404 }
+            );
         }
 
-        return NextResponse.json({ order });
+        return NextResponse.json({
+            order: JSON.parse(JSON.stringify(order))
+        });
     } catch (error) {
         console.error('Get order error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
 
+// PUT /api/orders/[id] - Update order status (admin only)
 export async function PUT(
     request: NextRequest,
-    { params }: RouteParams
+    { params }: { params: { id: string } }
 ) {
     try {
         const authResult = await verifyAuth(request);
+        
         if (!authResult.success) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        // Check if user is admin
+        if (authResult.user.role !== 'admin') {
+            return NextResponse.json(
+                { error: 'Forbidden' },
+                { status: 403 }
+            );
         }
 
         await connectDB();
+
         const updateData = await request.json();
-        const { id } = await params; 
+        const { status, trackingNumber, estimatedDelivery, notes } = updateData;
 
-        const query: any = { _id: id };
-
-        // If customer, only allow limited updates
-        if (authResult.user?.role === 'customer') {
-            query.customer = authResult.user.userId;
-
-            // Customers can only cancel pending orders
-            if (updateData.status && updateData.status !== 'cancelled') {
-                return NextResponse.json(
-                    { error: 'Customers can only cancel orders' },
-                    { status: 403 }
-                );
-            }
-
-            const existingOrder = await Order.findOne(query);
-            if (!existingOrder) {
-                return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-            }
-
-            if (existingOrder.status !== 'pending') {
-                return NextResponse.json(
-                    { error: 'Order cannot be cancelled' },
-                    { status: 400 }
-                );
-            }
-        }
-
-        const order = await Order.findOneAndUpdate(query, updateData, { new: true })
-            .populate('customer', 'name email phone')
-            .populate('items.product', 'name images price');
+        const order = await Order.findByIdAndUpdate(
+            params.id,
+            {
+                status,
+                trackingNumber,
+                estimatedDelivery,
+                notes,
+                updatedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        ).populate('items.product', 'name image slug');
 
         if (!order) {
-            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+            return NextResponse.json(
+                { error: 'Order not found' },
+                { status: 404 }
+            );
         }
 
-        return NextResponse.json({ message: 'Order updated successfully', order });
+        return NextResponse.json({
+            message: 'Order updated successfully',
+            order: JSON.parse(JSON.stringify(order))
+        });
     } catch (error) {
         console.error('Update order error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
 
+// DELETE /api/orders/[id] - Cancel order
 export async function DELETE(
     request: NextRequest,
-    { params }: RouteParams
+    { params }: { params: { id: string } }
 ) {
     try {
         const authResult = await verifyAuth(request);
-        if (!authResult.success || authResult.user?.role !== 'admin') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        
+        if (!authResult.success) {
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            );
         }
 
         await connectDB();
-        const { id } = await params;
 
-        const order = await Order.findByIdAndDelete(id);
+        const order = await Order.findOne({
+            _id: params.id,
+            user: authResult.user.userId
+        });
 
         if (!order) {
-            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+            return NextResponse.json(
+                { error: 'Order not found' },
+                { status: 404 }
+            );
         }
 
-        return NextResponse.json({ message: 'Order deleted successfully' });
+        // Only allow cancellation if order is pending or processing
+        if (!['pending', 'processing'].includes(order.status)) {
+            return NextResponse.json(
+                { error: 'Order cannot be cancelled' },
+                { status: 400 }
+            );
+        }
+
+        order.status = 'cancelled';
+        order.updatedAt = new Date();
+        await order.save();
+
+        return NextResponse.json({
+            message: 'Order cancelled successfully',
+            order: JSON.parse(JSON.stringify(order))
+        });
     } catch (error) {
-        console.error('Delete order error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('Cancel order error:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }

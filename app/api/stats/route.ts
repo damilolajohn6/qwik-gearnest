@@ -33,12 +33,12 @@ export async function GET(request: NextRequest) {
             recentOrders,
             paidOrders
         ] = await Promise.all([
-            Product.countDocuments({ isActive: true }),
-            User.countDocuments({ role: 'customer' }),
-            Category.countDocuments({ isActive: true }),
-            Order.countDocuments(),
-            Order.countDocuments({ createdAt: { $gte: startDate } }),
-            Order.countDocuments({ paymentStatus: 'paid' })
+            Product.countDocuments({ isActive: true }).lean(),
+            User.countDocuments({ role: 'customer' }).lean(),
+            Category.countDocuments({ isActive: true }).lean(),
+            Order.countDocuments().lean(),
+            Order.countDocuments({ createdAt: { $gte: startDate } }).lean(),
+            Order.countDocuments({ paymentStatus: 'paid' }).lean()
         ]);
 
         // Get revenue statistics
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
                     averageOrderValue: { $avg: '$total' }
                 }
             }
-        ]);
+        ]).exec();
 
         const recentRevenueStats = await Order.aggregate([
             {
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
                     recentOrders: { $sum: 1 }
                 }
             }
-        ]);
+        ]).exec();
 
         // Get order status distribution
         const orderStatusStats = await Order.aggregate([
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
                     count: { $sum: 1 }
                 }
             }
-        ]);
+        ]).exec();
 
         // Get top-selling products
         const topProducts = await Order.aggregate([
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
                 }
             },
             { $unwind: '$product' }
-        ]);
+        ]).exec();
 
         // Get sales trend (daily sales for the period)
         const salesTrend = await Order.aggregate([
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
                 }
             },
             { $sort: { '_id': 1 } }
-        ]);
+        ]).exec();
 
         // Get category performance
         const categoryStats = await Order.aggregate([
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
                 }
             },
             { $sort: { totalSales: -1 } }
-        ]);
+        ]).exec();
 
         return NextResponse.json({
             overview: {

@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
                     name: user.name,
                     email: user.email,
                     role: user.role
-                }
+                },
+                token: token
             },
             { status: 200 }
         );

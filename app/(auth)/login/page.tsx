@@ -1,19 +1,40 @@
 import { GalleryVerticalEnd } from "lucide-react"
-
-import LoginForm  from "@/components/login-form"
-import Link from "next/link";
+import Image from "next/image"
+import Link from "next/link"
+import LoginForm from "@/components/login-form"
 
 export default function LoginPage() {
   return (
-    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <Link href="/" className="flex items-center gap-2 self-center font-medium">
-          <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-            <GalleryVerticalEnd className="size-4" />
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+      {/* Left Side - Form */}
+      <div className="flex flex-col gap-4 p-4 sm:p-6 md:p-10">
+        {/* Logo / Branding */}
+        <div className="flex justify-center md:justify-start">
+          <Link href="/" className="flex items-center gap-2 font-medium">
+            <div className="bg-primary text-primary-foreground flex size-8 sm:size-6 items-center justify-center rounded-md">
+              <GalleryVerticalEnd className="size-4 sm:size-3" />
+            </div>
+            <span className="text-lg sm:text-base">Qwik GearNest</span>
+          </Link>
+        </div>
+
+        {/* Form Centered */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-sm sm:max-w-md">
+            <LoginForm />
           </div>
-          Qwik GearNest
-        </Link>
-        <LoginForm />
+        </div>
+      </div>
+
+      {/* Right Side - Image */}
+      <div className="hidden lg:block relative bg-muted">
+        <Image
+          src="/phone.png"
+          alt="Tech Gadgets"
+          fill
+          className="object-cover dark:brightness-[0.4] dark:grayscale"
+          priority
+        />
       </div>
     </div>
   );

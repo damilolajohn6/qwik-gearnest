@@ -1,123 +1,171 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrderItem {
-    product: Types.ObjectId; // Use Types.ObjectId instead of string
-    name: string;
-    price: number;
+    product: mongoose.Types.ObjectId;
     quantity: number;
-    image: string;
-    sku: string;
+    price: number;
+}
+
+export interface IShippingAddress {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+}
+
+export interface IPaymentMethod {
+    type: string;
+    last4?: string;
+    transactionId?: string;
 }
 
 export interface IOrder extends Document {
-    _id: string;
     orderNumber: string;
-    customer: Types.ObjectId; // Use Types.ObjectId instead of string
+    user: mongoose.Types.ObjectId;
+    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
     items: IOrderItem[];
+    shippingAddress: IShippingAddress;
+    billingAddress?: IShippingAddress;
+    paymentMethod: IPaymentMethod;
     subtotal: number;
     tax: number;
     shipping: number;
     discount: number;
-    total: number;
-    currency: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
-    paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-    paymentMethod: string;
-    paymentReference?: string;
-    paystackReference?: string;
-    shippingAddress: {
-        name: string;
-        email: string;
-        phone: string;
-        street: string;
-        city: string;
-        state: string;
-        zipCode: string;
-        country: string;
-    };
-    billingAddress?: {
-        name: string;
-        email: string;
-        phone: string;
-        street: string;
-        city: string;
-        state: string;
-        zipCode: string;
-        country: string;
-    };
-    notes?: string;
+    totalAmount: number;
     trackingNumber?: string;
     estimatedDelivery?: Date;
-    deliveredAt?: Date;
-    cancelledAt?: Date;
-    refundedAt?: Date;
+    notes?: string;
     createdAt: Date;
     updatedAt: Date;
 }
 
+const OrderItemSchema = new Schema<IOrderItem>({
+    product: {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+    },
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    price: {
+        type: Number,
+        required: true,
+        min: 0
+    }
+});
+
+const ShippingAddressSchema = new Schema<IShippingAddress>({
+    street: {
+        type: String,
+        required: true
+    },
+    city: {
+        type: String,
+        required: true
+    },
+    state: {
+        type: String,
+        required: true
+    },
+    zipCode: {
+        type: String,
+        required: true
+    },
+    country: {
+        type: String,
+        required: true
+    }
+});
+
+const PaymentMethodSchema = new Schema<IPaymentMethod>({
+    type: {
+        type: String,
+        required: true
+    },
+    last4: {
+        type: String
+    },
+    transactionId: {
+        type: String
+    }
+});
+
 const OrderSchema = new Schema<IOrder>({
-    orderNumber: { type: String, required: true, unique: true },
-    customer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    items: [{
-        product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-        name: { type: String, required: true },
-        price: { type: Number, required: true },
-        quantity: { type: Number, required: true, min: 1 },
-        image: { type: String, required: true },
-        sku: { type: String, required: true }
-    }],
-    subtotal: { type: Number, required: true, min: 0 },
-    tax: { type: Number, default: 0, min: 0 },
-    shipping: { type: Number, default: 0, min: 0 },
-    discount: { type: Number, default: 0, min: 0 },
-    total: { type: Number, required: true, min: 0 },
-    currency: { type: String, default: 'NGN' },
+    orderNumber: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     status: {
         type: String,
-        enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
+        enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
         default: 'pending'
     },
-    paymentStatus: {
-        type: String,
-        enum: ['pending', 'paid', 'failed', 'refunded'],
-        default: 'pending'
-    },
-    paymentMethod: { type: String, required: true },
-    paymentReference: String,
-    paystackReference: String,
+    items: [OrderItemSchema],
     shippingAddress: {
-        name: { type: String, required: true },
-        email: { type: String, required: true },
-        phone: { type: String, required: true },
-        street: { type: String, required: true },
-        city: { type: String, required: true },
-        state: { type: String, required: true },
-        zipCode: String,
-        country: { type: String, default: 'Nigeria' }
+        type: ShippingAddressSchema,
+        required: true
     },
     billingAddress: {
-        name: String,
-        email: String,
-        phone: String,
-        street: String,
-        city: String,
-        state: String,
-        zipCode: String,
-        country: String
+        type: ShippingAddressSchema
     },
-    notes: String,
-    trackingNumber: String,
-    estimatedDelivery: Date,
-    deliveredAt: Date,
-    cancelledAt: Date,
-    refundedAt: Date,
+    paymentMethod: {
+        type: PaymentMethodSchema,
+        required: true
+    },
+    subtotal: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    tax: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    shipping: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    discount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    totalAmount: {
+        type: Number,
+        required: true,
+        min: 0
+    },
+    trackingNumber: {
+        type: String
+    },
+    estimatedDelivery: {
+        type: Date
+    },
+    notes: {
+        type: String
+    }
 }, {
     timestamps: true
 });
 
-OrderSchema.index({ customer: 1, createdAt: -1 });
-OrderSchema.index({ status: 1 });
-OrderSchema.index({ paymentStatus: 1 });
+// Index for better query performance
+OrderSchema.index({ user: 1, createdAt: -1 });
 OrderSchema.index({ orderNumber: 1 });
+OrderSchema.index({ status: 1 });
 
-export const Order = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+const Order = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+
+export { Order };
+export default Order;
