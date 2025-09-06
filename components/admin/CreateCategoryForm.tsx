@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Save, Plus, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 export default function CreateCategoryForm() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function CreateCategoryForm() {
     image: "",
     isActive: true,
   });
+  const [images, setImages] = useState<string[]>([]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -47,7 +49,10 @@ export default function CreateCategoryForm() {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` }),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          image: images[0] || formData.image, // Use first uploaded image or fallback to URL
+        }),
       });
 
       if (!response.ok) {
@@ -65,6 +70,7 @@ export default function CreateCategoryForm() {
         image: "",
         isActive: true,
       });
+      setImages([]);
       setIsExpanded(false);
       
       // Refresh the page to show new category
@@ -84,6 +90,7 @@ export default function CreateCategoryForm() {
       image: "",
       isActive: true,
     });
+    setImages([]);
     setIsExpanded(false);
   };
 
@@ -128,7 +135,7 @@ export default function CreateCategoryForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image">Image URL</Label>
+                <Label htmlFor="image">Image URL (Alternative)</Label>
                 <Input
                   id="image"
                   value={formData.image}
@@ -136,6 +143,16 @@ export default function CreateCategoryForm() {
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Category Image</Label>
+              <ImageUpload
+                images={images}
+                onImagesChange={setImages}
+                maxImages={1}
+                folder="categories"
+              />
             </div>
             
             <div className="space-y-2">

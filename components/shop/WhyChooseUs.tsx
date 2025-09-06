@@ -64,7 +64,7 @@ export function WhyChooseUs() {
             Why Choose GearNest?
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We're committed to providing the best shopping experience with premium products and exceptional service.
+            We&apos;re committed to providing the best shopping experience with premium products and exceptional service.
           </p>
         </div>
 

@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Save, Upload, X } from "lucide-react";
+import { Save } from "lucide-react";
 import { toast } from "react-hot-toast";
-import Image from "next/image";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Category {
   _id: string;
@@ -59,28 +59,6 @@ export default function CreateProductForm({ categories }: CreateProductFormProps
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      const newImages: string[] = [];
-      Array.from(files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            newImages.push(e.target.result as string);
-            if (newImages.length === files.length) {
-              setImages(prev => [...prev, ...newImages]);
-            }
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,55 +270,12 @@ export default function CreateProductForm({ categories }: CreateProductFormProps
               <CardTitle>Product Images</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Upload product images</p>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  Choose Files
-                </Button>
-                
-                {/* Display uploaded images */}
-                {images.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <Image
-                          src={image}
-                          alt={`Product image ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="w-full h-20 object-cover rounded"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <ImageUpload
+                images={images}
+                onImagesChange={setImages}
+                maxImages={5}
+                folder="products"
+              />
             </CardContent>
           </Card>
 

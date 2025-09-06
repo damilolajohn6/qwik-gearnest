@@ -7,6 +7,12 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Validate configuration
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    console.warn('⚠️  Cloudinary environment variables are not configured. Image uploads will fail.');
+    console.warn('Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env.local file');
+}
+
 export interface UploadResult {
     secure_url: string;
     public_id: string;
@@ -24,6 +30,11 @@ export const uploadImage = async (
         format?: string;
     } = {}
 ): Promise<UploadResult> => {
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+        throw new Error('Cloudinary is not configured. Please set the required environment variables.');
+    }
+
     try {
         let fileString: string;
         if (Buffer.isBuffer(file)) {

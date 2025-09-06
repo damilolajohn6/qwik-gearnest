@@ -70,7 +70,7 @@ export function TestimonialsSection() {
             What Our Customers Say
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Don't just take our word for it. Here's what our satisfied customers have to say about their GearNest experience.
+            Don&apos;t just take our word for it. Here&apos;s what our satisfied customers have to say about their GearNest experience.
           </p>
         </div>
 
@@ -90,7 +90,7 @@ export function TestimonialsSection() {
                 <div className="relative mb-4">
                   <Quote className="h-8 w-8 text-indigo-200 absolute -top-2 -left-2" />
                   <p className="text-gray-700 italic pl-6">
-                    "{testimonial.content}"
+                    &quot;{testimonial.content}&quot;
                   </p>
                 </div>
 
